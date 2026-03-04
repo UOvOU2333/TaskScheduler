@@ -1,10 +1,11 @@
 import streamlit as st
 import streamlit_antd_components as sac
 
-from services import sql_services as db
 from tasks.createTask import createTask
 from tasks.showTasks import showAllTasks
 from widgets.navbar import navbar
+from managing.statesManage import stateManage
+from managing.typesManage import typeManage
 
 st.set_page_config(page_title="Task Scheduler", layout="wide")
 
@@ -15,8 +16,10 @@ with st.sidebar:
     st.title("任务管理")
     menu = sac.menu(
         items=[
-            sac.MenuItem('创建任务', icon='upload'),
+            sac.MenuItem('创建任务', icon='plus-circle'),
             sac.MenuItem('全部任务', icon='database'),
+            sac.MenuItem('类型管理', icon='tag'),
+            sac.MenuItem('状态管理', icon='toggle-on'),
         ],
         open_all=True
     )
@@ -41,3 +44,13 @@ elif menu == "全部任务":
     with col_mainT:
         st.title("全部任务")
     showAllTasks()
+
+elif menu == "类型管理":
+    with col_mainT:
+        st.title("任务类型管理")
+    typeManage()
+
+elif menu == "状态管理":
+    with col_mainT:
+        st.title("任务状态管理")
+    stateManage()

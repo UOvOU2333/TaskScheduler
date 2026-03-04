@@ -1,12 +1,12 @@
 import streamlit as st
 from datetime import date
 
-from services import sql_services as db
+from services import task_services as taskDB
 
 def createTask():
 
-    types = db.get_task_types()
-    states = db.get_task_states()
+    types = taskDB.get_task_types()
+    states = taskDB.get_task_states()
 
     type_dict = {t["type_name"]: t["id"] for t in types}
     state_dict = {s["state_name"]: s["id"] for s in states}
@@ -14,6 +14,7 @@ def createTask():
     col1, col2 = st.columns(2)
 
     with col1:
+        task_name = st.text_input("任务名称")
         type_name = st.selectbox("任务类型", list(type_dict.keys()))
         state_name = st.selectbox("初始状态", list(state_dict.keys()))
         frequency = st.selectbox(
@@ -49,7 +50,12 @@ def createTask():
             week_mask |= (1 << week_map[w])
     
     if st.button("创建任务", key="createTask"):
-        db.create_task(
+        if not task_name:
+            st.warning("请输入任务名称")
+            return
+
+        taskDB.create_task(
+            task_name,
             type_dict[type_name],
             state_dict[state_name],
             frequency,

@@ -7,20 +7,27 @@ sql = """
     CREATE TABLE IF NOT EXISTS task_type (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type_name TEXT UNIQUE NOT NULL,
-        color TEXT,
+        type_color TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS task_state (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         state_name TEXT UNIQUE NOT NULL,
-        color TEXT,
+        state_color TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS preset_colors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        color_name TEXT UNIQUE NOT NULL,
+        color_value TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        taskName TEXT UNIQUE NOT NULL,
+        task_name TEXT UNIQUE NOT NULL,
         type_id INTEGER NOT NULL,
         state_id INTEGER NOT NULL,
         frequency TEXT CHECK (frequency IN ('weekday','once','daily','everyTwoDay','everyThreeDay','weekly','everyTwoWeek','monthly')),

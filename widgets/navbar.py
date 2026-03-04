@@ -10,7 +10,7 @@ def navbar(pageName):
     if "show_navbar" not in st.session_state:
         st.session_state["show_navbar"] = False
 
-    if st.button("导航栏", use_container_width=True, type="primary"):
+    if st.button("页面导航栏", use_container_width=True, type="primary"):
         st.session_state["show_navbar"] = not st.session_state["show_navbar"]
                 
 
@@ -21,4 +21,4 @@ def navbar(pageName):
                 st.switch_page("main.py")
         with col_nav2:
             if st.button("任务管理", key=f"btn_task_{pageName}", use_container_width=True):
-                st.switch_page("pages/taskManage.py")
+                st.switch_page("pages/managingPage.py")

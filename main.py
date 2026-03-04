@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit_antd_components as sac
 
-from tasks.showTasks import todayTasks
+from tasks.showTasks import todayTasks, overview
 from widgets.navbar import navbar
 
 st.set_page_config(page_title="Task Scheduler", layout="wide")
@@ -13,7 +13,7 @@ with st.sidebar:
     st.title("首页")
     menu = sac.menu(
         items=[
-            sac.MenuItem('总览看板', icon='calendar'),
+            sac.MenuItem('总览看板', icon='house-door'),
         ],
         open_all=True
     )
@@ -30,8 +30,11 @@ with col_subT:
 if menu == "总览看板":
     with col_mainT:
         st.title("总览看板")
-    st.header("今日任务")
-    todayTasks()
+    col_today, col_blank, col_overview = st.columns([10,1,20])
+    with col_today:
+        todayTasks()
+    with col_overview:
+        overview()
 
 
 
