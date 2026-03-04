@@ -61,12 +61,20 @@ def preset_color_manager(return_selected: bool = False):
                 color_value = st.color_picker("选择颜色", "#409EFF", key="pc_picker")
 
             if st.button("保存颜色", key="pc_save"):
-                if color_name.strip():
-                    add_preset_color(color_name.strip(), color_value)
-                    st.success("保存成功")
-                    st.rerun()
-                else:
+                name = color_name.strip()
+
+                if not name:
                     st.warning("请输入颜色名称")
+                else:
+                    # 检查是否重名（忽略大小写）
+                    existing_names = [c["color_name"].lower() for c in colors]
+
+                    if name.lower() in existing_names:
+                        st.error("颜色名称已存在，请使用其他名称")
+                    else:
+                        add_preset_color(name, color_value)
+                        st.success("保存成功")
+                        st.rerun()
 
     with col_cho:
         if not colors:
