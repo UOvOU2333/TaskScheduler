@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_antd_components as sac
 
 from tasks.createTask import createTask
+from tasks.updateTask import updateTask
 from tasks.showTasks import showAllTasks
 from widgets.navbar import navbar
 from managing.statesManage import stateManage
@@ -17,6 +18,7 @@ with st.sidebar:
     menu = sac.menu(
         items=[
             sac.MenuItem('创建任务', icon='plus-circle'),
+            sac.MenuItem('修改任务', icon='recycle'),
             sac.MenuItem('全部任务', icon='database'),
             sac.MenuItem('类型管理', icon='tag'),
             sac.MenuItem('状态管理', icon='toggle-on'),
@@ -36,6 +38,11 @@ if menu == "创建任务":
     with col_mainT:
         st.title("创建任务")
     createTask()
+
+elif menu == "修改任务":
+    with col_mainT:
+        st.title("修改任务")
+    updateTask()
 
 # ==================================
 # 全部任务页面

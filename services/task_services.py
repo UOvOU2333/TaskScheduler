@@ -33,6 +33,55 @@ def get_task_states():
     return rows
 
 
+def get_task_by_id(task_id):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT * FROM tasks WHERE id = ?
+    """, (task_id,))
+
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def update_task(task_id, task_name, type_id, state_id, frequency,
+                week_mask, start, end, total_amount, daily_target, priority):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE tasks
+        SET task_name = ?,
+            type_id = ?,
+            state_id = ?,
+            frequency = ?,
+            week_mask = ?,
+            scheduled_start = ?,
+            scheduled_end = ?,
+            total_amount = ?,
+            daily_target = ?,
+            priority = ?
+        WHERE id = ?
+    """, (
+        task_name,
+        type_id,
+        state_id,
+        frequency,
+        week_mask,
+        start,
+        end,
+        total_amount,
+        daily_target,
+        priority,
+        task_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+
 # =========================
 # 任务操作
 # =========================
@@ -150,8 +199,9 @@ def get_task_completion_rate(task_id):
 
     cur.execute("""
         SELECT 
-            COALESCE(SUM(dc.finished_amount), 0) * 1.0 / 
-            COALESCE(SUM(t.daily_target), 1) AS rate
+            t.total_amount,
+            t.scheduled_end,
+            COALESCE(SUM(dc.finished_amount), 0) AS total_finished
         FROM tasks t
         LEFT JOIN daily_check dc ON t.id = dc.task_id
         WHERE t.id = ?
@@ -161,4 +211,20 @@ def get_task_completion_rate(task_id):
     row = cur.fetchone()
     conn.close()
 
-    return row["rate"] if row and row["rate"] is not None else 0.0
+    if not row:
+        return None
+
+    total_amount = row["total_amount"] or 1
+    scheduled_end = row["scheduled_end"]
+    total_finished = row["total_finished"]
+
+    # 若总目标为1且未设置结束日期，则不显示进度条
+    if total_amount == 1 and scheduled_end is None:
+        return None
+
+    # 优先按总目标计算完成率
+    rate = total_finished * 1.0 / total_amount if total_amount > 0 else 0.0
+
+    result = [total_finished, total_amount, min(max(rate, 0.0), 1.0)]
+    # 进度条最大显示为100%
+    return result

@@ -33,7 +33,7 @@ with col_subT:
 if menu == "总览看板":
     with col_mainT:
         st.title("总览看板")
-    col_today, col_blank, col_overview = st.columns([10,1,20])
+    col_today, col_blank, col_overview = st.columns([15,1,20])
     with col_today:
         todayTasks()
     with col_overview:
