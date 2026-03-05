@@ -15,29 +15,54 @@ def createTask():
 
     with col1:
         task_name = st.text_input("任务名称")
+        freq_display_list = [
+            "一次性",
+            "每天",
+            "工作日",
+            "每周",
+            "每月",
+            "每两天",
+            "每三天",
+            "每两周"
+        ]
+
+        freq_map = {
+            "一次性": "once",
+            "每天": "daily",
+            "每两天": "everyTwoDay",
+            "每三天": "everyThreeDay",
+            "每周": "weekly",
+            "每两周": "everyTwoWeek",
+            "每月": "monthly",
+            "工作日": "weekday"
+        }
+
+        freq_display = st.selectbox("周期", freq_display_list)
+        frequency = freq_map[freq_display]
         type_name = st.selectbox("任务类型", list(type_dict.keys()))
         state_name = st.selectbox("初始状态", list(state_dict.keys()))
-        frequency = st.selectbox(
-            "周期",
-            ["once", "daily", "everyTwoDay",
-             "everyThreeDay", "weekly",
-             "everyTwoWeek", "monthly", "weekday"]
-        )
+        
 
         start = st.date_input("开始日期", value=date.today())
         end = st.date_input("结束日期（可选）", value=None)
 
     with col2:
         priority = st.slider("优先级", 0, 10, 5)
-        total_amount = st.number_input("目标次数", min_value=1, value=1)
 
-        st.write("选择星期（用于 weekly / weekday）")
-
-        weekdays = st.multiselect(
-            "选择星期",
-            ["周日", "周一", "周二", "周三",
-             "周四", "周五", "周六"]
+        total_amount = st.number_input(
+            "总目标次数",
+            min_value=1,
+            value=1
         )
+
+        daily_target = st.number_input(
+            "每日目标次数",
+            min_value=1,
+            value=1
+        )
+
+        all_weekdays = ["周日", "周一", "周二", "周三",
+                        "周四", "周五", "周六"]
 
         week_map = {
             "周日": 0, "周一": 1, "周二": 2,
@@ -46,8 +71,17 @@ def createTask():
         }
 
         week_mask = 0
-        for w in weekdays:
-            week_mask |= (1 << week_map[w])
+
+        if frequency == "weekly":
+            weekdays = st.multiselect("选择星期", all_weekdays)
+            for w in weekdays:
+                week_mask |= (1 << week_map[w])
+
+        elif frequency == "weekday":
+            # 自动选择周一到周五
+            weekdays = ["周一", "周二", "周三", "周四", "周五"]
+            for w in weekdays:
+                week_mask |= (1 << week_map[w])
     
     if st.button("创建任务", key="createTask"):
         if not task_name:
@@ -63,6 +97,7 @@ def createTask():
             start.isoformat(),
             end.isoformat() if end else None,
             total_amount,
+            daily_target,
             priority
         )
         st.success("任务创建成功！")

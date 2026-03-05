@@ -38,7 +38,7 @@ def get_task_states():
 # =========================
 
 def create_task(task_name, type_id, state_id, frequency,
-                week_mask, start, end, total_amount, priority):
+                week_mask, start, end, total_amount, daily_target, priority):
     conn = get_conn()
     cur = conn.cursor()
 
@@ -46,11 +46,11 @@ def create_task(task_name, type_id, state_id, frequency,
         INSERT INTO tasks
         (task_name, type_id, state_id, frequency,
          week_mask, scheduled_start, scheduled_end,
-         total_amount, priority)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         total_amount, daily_target, priority)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (task_name, type_id, state_id, frequency,
           week_mask, start, end,
-          total_amount, priority))
+          total_amount, daily_target, priority))
 
     conn.commit()
     conn.close()
@@ -88,6 +88,7 @@ def get_day_tasks(day = date.today().isoformat()):
             dc.finished_amount,
             t.task_name,
             t.total_amount,
+            t.daily_target,
             t.priority,
             tt.type_name,
             tt.type_color,
@@ -114,7 +115,7 @@ def finish_today_task(task_id):
 
     cur.execute("""
         UPDATE daily_check
-        SET finished_amount = 1
+        SET finished_amount = finished_amount + 1
         WHERE task_id = ? AND date = ?
     """, (task_id, today))
 
@@ -129,7 +130,10 @@ def undo_today_task(task_id):
 
     cur.execute("""
         UPDATE daily_check
-        SET finished_amount = 0
+        SET finished_amount = CASE
+            WHEN finished_amount > 0 THEN finished_amount - 1
+            ELSE 0
+        END
         WHERE task_id = ? AND date = ?
     """, (task_id, today))
 
@@ -147,7 +151,7 @@ def get_task_completion_rate(task_id):
     cur.execute("""
         SELECT 
             COALESCE(SUM(dc.finished_amount), 0) * 1.0 / 
-            COALESCE(t.total_amount, 1) AS rate
+            COALESCE(SUM(t.daily_target), 1) AS rate
         FROM tasks t
         LEFT JOIN daily_check dc ON t.id = dc.task_id
         WHERE t.id = ?

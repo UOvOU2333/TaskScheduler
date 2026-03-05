@@ -3,6 +3,9 @@ import streamlit_antd_components as sac
 
 from tasks.showTasks import todayTasks, overview
 from widgets.navbar import navbar
+from services.snapshots_services import ensure_all_snapshots
+
+ensure_all_snapshots()
 
 st.set_page_config(page_title="Task Scheduler", layout="wide")
 

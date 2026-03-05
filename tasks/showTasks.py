@@ -76,7 +76,7 @@ def todayTasks():
         type_color = t["type_color"] if "type_color" in t.keys() and t["type_color"] else "#999999"
         state_color = t["state_color"] if "state_color" in t.keys() and t["state_color"] else "#999999"
 
-        col1, col2 = st.columns([2, 1])
+        col1, col2 = st.columns([3, 2])
 
         # ===== 左侧：卡片标题 + 胶囊 =====
         with col1:
@@ -90,19 +90,41 @@ def todayTasks():
 
         # ===== 中间：完成状态 =====
         with col2:
-            status_label = "已完成" if t['finished_amount'] else "未完成"
-            status_color = "#4CAF50" if t['finished_amount'] else "#F44336"
+            finished = t["finished_amount"]
+            daily_target = t["daily_target"] if "daily_target" in t.keys() and t["daily_target"] is not None else 1
 
-            st.markdown(render_capsule(status_label, status_color), unsafe_allow_html=True)
+            # 进度条
 
-            if t["finished_amount"] == 0:
-                if st.button("完成", key=f"finish_{t['task_id']}", use_container_width=True):
-                    taskDB.finish_today_task(t["task_id"])
-                    st.rerun()
-            else:
-                if st.button("撤销", key=f"undo_{t['task_id']}", use_container_width=True):
-                    taskDB.undo_today_task(t["task_id"])
-                    st.rerun()
+            # 状态判断
+            is_done = finished >= daily_target
+            status_label = "已达标" if is_done else "进行中"
+            status_color = "#4CAF50" if is_done else "#FF9800"
+
+            progress_ratio = finished / daily_target if daily_target > 0 else 0.0
+            progress_ratio = min(max(progress_ratio, 0.0), 1.0)
+
+            st.markdown(
+                render_capsule(f"{status_label}", status_color),
+                unsafe_allow_html=True
+            )
+
+            st.progress(progress_ratio)
+            st.caption(f"{finished} / {daily_target}")
+
+            # ===== 操作按钮 =====
+            btn_col1, btn_col2 = st.columns(2)
+
+            with btn_col1:
+                if finished < daily_target:
+                    if st.button("＋1", key=f"finish_{t['task_id']}", use_container_width=True):
+                        taskDB.finish_today_task(t["task_id"])
+                        st.rerun()
+
+            with btn_col2:
+                if finished > 0:
+                    if st.button("－1", key=f"undo_{t['task_id']}", use_container_width=True):
+                        taskDB.undo_today_task(t["task_id"])
+                        st.rerun()
 
         st.divider()
 
@@ -111,15 +133,6 @@ def overview():
 
     # 获取昨天、今天和未来3天
     days = [today - datetime.timedelta(days=1) + datetime.timedelta(days=i) for i in range(5)]
-
-    def is_light_color(hex_color):
-        # Remove '#' if present
-        hex_color = hex_color.lstrip('#')
-        # Convert to RGB integer tuple
-        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        # Calculate luminance
-        luminance = (0.299 * r + 0.587 * g + 0.114 * b)
-        return luminance > 186  # Threshold for light/dark
 
     # 显示5天（昨天、今天、未来3天）
     cols = st.columns(5)
@@ -135,14 +148,10 @@ def overview():
                 for t in day_tasks:
                     type_color = t["type_color"] if "type_color" in t.keys() and t["type_color"] else "#999999"
 
-                    # Determine text color based on type_color for contrast
-                    text_color = "#000000" if is_light_color(type_color) else "#FFFFFF"
-
-                    # Compose the two narrow vertical bars and task name HTML
                     bars_html = f'''
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <div style="width: 8px; height: 20px; background-color: {type_color}; border-radius: 4px;"></div>
-                        <div style="color: {text_color}; font-weight: 100; white-space: nowrap;">{t['task_name']}</div>
+                        <div style="font-weight: 500; white-space: nowrap;">{t['task_name']}</div>
                     </div>
                     '''
                     st.markdown(bars_html, unsafe_allow_html=True)

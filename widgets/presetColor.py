@@ -52,7 +52,7 @@ def preset_color_manager(return_selected: bool = False):
         # ================= 新增颜色 =================
         with st.expander("新增颜色"):
 
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns([2,1])
 
             with col1:
                 color_name = st.text_input("颜色名称", key="pc_name")
@@ -70,7 +70,7 @@ def preset_color_manager(return_selected: bool = False):
                     existing_names = [c["color_name"].lower() for c in colors]
 
                     if name.lower() in existing_names:
-                        st.error("颜色名称已存在，请使用其他名称")
+                        st.error("该名称已被占用")
                     else:
                         add_preset_color(name, color_value)
                         st.success("保存成功")
