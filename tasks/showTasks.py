@@ -15,7 +15,7 @@ def showAllTasks():
     type_options = ["全部"] + [t["type_name"] for t in type_list]
     state_options = ["全部"] + [s["state_name"] for s in state_list]
 
-    col_filter1, col_filter2, col_filter3, col_filter4 = st.columns([3,3,3,3])
+    col_filter1, col_filter2, col_sort1, col_sort2, col_blank, col_filter3, col_filter4 = st.columns([10,10,10,10,1,10,20])
 
     with col_filter1:
         selected_type = st.selectbox("类型筛选", type_options)
@@ -35,6 +35,19 @@ def showAllTasks():
     with col_filter4:
         min_priority, max_priority = st.slider("优先级范围", 0, 10, (0, 10))
 
+# ===== 排序控件 =====
+    with col_sort1:
+        sort_field = st.selectbox(
+            "排序字段",
+            ["优先级", "创建时间", "任务名称"]
+        )
+
+    with col_sort2:
+        sort_order = st.selectbox(
+            "排序方式",
+            ["降序", "升序"]
+        )
+
     # ===== 获取任务 =====
     tasks = taskDB.get_all_tasks_filtered(
         type_id=type_id,
@@ -44,6 +57,17 @@ def showAllTasks():
         max_priority=max_priority
     )
 
+    # ===== 前端排序 =====
+    if sort_field == "优先级":
+        key = "priority"
+    elif sort_field == "创建时间":
+        key = "created_at"
+    else:
+        key = "task_name"
+
+    reverse = True if sort_order == "降序" else False
+    tasks = sorted(tasks, key=lambda x: x[key], reverse=reverse)
+
     # ===== 无任务提示 =====
     if not tasks:
         st.info("暂无任务")
@@ -51,7 +75,7 @@ def showAllTasks():
 
     # ===== 展示任务 =====
     st.divider()
-    for t in sorted(tasks, key=lambda x: x["priority"]):
+    for t in tasks:
         rate = taskDB.get_task_completion_rate(t["id"])
 
         type_color = t["type_color"] if "type_color" in t.keys() and t["type_color"] else "#999999"
