@@ -2,22 +2,56 @@ import streamlit as st
 import datetime
 
 from services import task_services as taskDB
+from services import type_services as typeDB
+from services import state_services as stateDB
 from widgets.capsule import render_capsule
 
 def showAllTasks():
 
-    st.divider()
+    # ===== 筛选控件 =====
+    type_list = typeDB.get_all_types()  # 返回 [{'id':1,'type_name':'工作'}, ...]
+    state_list = stateDB.get_all_states()  # 返回 [{'id':1,'state_name':'进行中'}, ...]
+    
+    type_options = ["全部"] + [t["type_name"] for t in type_list]
+    state_options = ["全部"] + [s["state_name"] for s in state_list]
 
-    tasks = taskDB.get_all_tasks()
+    col_filter1, col_filter2, col_filter3, col_filter4 = st.columns([3,3,3,3])
 
-    # 按优先级排序（假设priority数值越小优先级越高，如相反可改为 reverse=True）
-    tasks = sorted(tasks, key=lambda x: x["priority"])
+    with col_filter1:
+        selected_type = st.selectbox("类型筛选", type_options)
+        type_id = None
+        if selected_type != "全部":
+            type_id = next(t["id"] for t in type_list if t["type_name"] == selected_type)
 
+    with col_filter2:
+        selected_state = st.selectbox("状态筛选", state_options)
+        state_id = None
+        if selected_state != "全部":
+            state_id = next(s["id"] for s in state_list if s["state_name"] == selected_state)
+
+    with col_filter3:
+        name_keyword = st.text_input("任务名关键字")
+
+    with col_filter4:
+        min_priority, max_priority = st.slider("优先级范围", 0, 10, (0, 10))
+
+    # ===== 获取任务 =====
+    tasks = taskDB.get_all_tasks_filtered(
+        type_id=type_id,
+        state_id=state_id,
+        name_keyword=name_keyword.strip() if name_keyword else None,
+        min_priority=min_priority,
+        max_priority=max_priority
+    )
+
+    # ===== 无任务提示 =====
     if not tasks:
         st.info("暂无任务")
         return
 
-    for t in tasks:
+    # ===== 展示任务 =====
+    st.divider()
+    for t in sorted(tasks, key=lambda x: x["priority"]):
         rate = taskDB.get_task_completion_rate(t["id"])
 
         type_color = t["type_color"] if "type_color" in t.keys() and t["type_color"] else "#999999"
@@ -45,12 +79,8 @@ def showAllTasks():
             empty_stars = 5 - full_stars - (1 if has_half else 0)
 
             stars_html = ""
-
-            # 满星
             for _ in range(full_stars):
                 stars_html += "<span style='color:#FFD700;font-size:20px;'>★</span>"
-
-            # 半星（使用渐变裁剪实现）
             if has_half:
                 stars_html += """
                 <span style='
@@ -60,17 +90,12 @@ def showAllTasks():
                     -webkit-text-fill-color: transparent;
                 '>★</span>
                 """
-
-            # 空星
             for _ in range(empty_stars):
                 stars_html += "<span style='color:#DDDDDD;font-size:20px;'>★</span>"
 
-            st.markdown(
-                f"<div style='margin-bottom:6px;'>{stars_html}</div>",
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<div style='margin-bottom:6px;'>{stars_html}</div>", unsafe_allow_html=True)
 
-            # ===== 频率展示优化 =====
+            # ===== 频率展示 =====
             freq_map = {
                 "daily": "每天",
                 "weekly": "每周",
@@ -88,20 +113,16 @@ def showAllTasks():
             if frequency in ("daily", "weekly", "weekday"):
                 days_label = ["M", "T", "W", "T", "F", "S", "S"]
                 circles = ""
-
                 for i in range(7):
                     active = False
-
                     if frequency == "daily":
                         active = True
                     elif frequency == "weekday":
                         active = i < 5
                     else:  # weekly 使用掩码
                         active = (week_mask >> i) & 1 == 1
-
                     bg = "#4CAF50" if active else "#E0E0E0"
                     color = "#FFFFFF" if active else "#666666"
-
                     circles += f"""
                     <div style='width:26px;height:26px;border-radius:50%;
                                 display:flex;align-items:center;justify-content:center;

@@ -20,7 +20,6 @@ def get_all_types():
     conn.close()
     return rows
 
-
 def add_type(type_name, type_color):
     conn = get_conn()
     cur = conn.cursor()

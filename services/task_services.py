@@ -3,13 +3,11 @@ from datetime import date
 
 DB_PATH = "data/task.db"
 
-
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
-
 
 # =========================
 # 基础查询
@@ -23,7 +21,6 @@ def get_task_types():
     conn.close()
     return rows
 
-
 def get_task_states():
     conn = get_conn()
     cur = conn.cursor()
@@ -31,7 +28,6 @@ def get_task_states():
     rows = cur.fetchall()
     conn.close()
     return rows
-
 
 def get_task_by_id(task_id):
     conn = get_conn()
@@ -44,7 +40,6 @@ def get_task_by_id(task_id):
     row = cur.fetchone()
     conn.close()
     return row
-
 
 def update_task(task_id, task_name, type_id, state_id, frequency,
                 week_mask, start, end, total_amount, daily_target, priority):
@@ -81,7 +76,6 @@ def update_task(task_id, task_name, type_id, state_id, frequency,
     conn.commit()
     conn.close()
 
-
 # =========================
 # 任务操作
 # =========================
@@ -104,7 +98,6 @@ def create_task(task_name, type_id, state_id, frequency,
     conn.commit()
     conn.close()
 
-
 def get_all_tasks():
     conn = get_conn()
     cur = conn.cursor()
@@ -121,6 +114,64 @@ def get_all_tasks():
     conn.close()
     return rows
 
+def get_all_tasks_filtered(type_id=None, state_id=None, name_keyword=None, min_priority=None, max_priority=None):
+    """
+    获取任务列表，支持筛选
+    :param type_id: int or list, 任务类型ID
+    :param state_id: int or list, 任务状态ID
+    :param name_keyword: str, 任务名称模糊匹配
+    :param min_priority: int, 最低优先级
+    :param max_priority: int, 最高优先级
+    :return: list of dict
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+
+    query = """
+        SELECT t.*, tt.type_name, tt.type_color, ts.state_name, ts.state_color
+        FROM tasks t
+        JOIN task_type tt ON t.type_id = tt.id
+        JOIN task_state ts ON t.state_id = ts.id
+        WHERE 1=1
+    """
+    params = []
+
+    if type_id is not None:
+        if isinstance(type_id, list):
+            placeholders = ",".join("?" for _ in type_id)
+            query += f" AND t.type_id IN ({placeholders})"
+            params.extend(type_id)
+        else:
+            query += " AND t.type_id = ?"
+            params.append(type_id)
+
+    if state_id is not None:
+        if isinstance(state_id, list):
+            placeholders = ",".join("?" for _ in state_id)
+            query += f" AND t.state_id IN ({placeholders})"
+            params.extend(state_id)
+        else:
+            query += " AND t.state_id = ?"
+            params.append(state_id)
+
+    if name_keyword:
+        query += " AND t.task_name LIKE ?"
+        params.append(f"%{name_keyword}%")
+
+    if min_priority is not None:
+        query += " AND t.priority >= ?"
+        params.append(min_priority)
+
+    if max_priority is not None:
+        query += " AND t.priority <= ?"
+        params.append(max_priority)
+
+    query += " ORDER BY t.priority DESC, t.id DESC"
+
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    conn.close()
+    return rows
 
 # =========================
 # 今日任务
